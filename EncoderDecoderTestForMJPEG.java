@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  *
  *
  */
-public class EncodeToJPEG extends AndroidTestCase {
+public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
     private static final String LOG_TAG = "EncodeToJPEG";
 
     // Where to find the input
