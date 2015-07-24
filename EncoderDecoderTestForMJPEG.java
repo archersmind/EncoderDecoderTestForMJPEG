@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
  *
  */
 public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
-    private static final String LOG_TAG = "EncodeToJPEG";
+    private static final String LOG_TAG = "EncoderDecoderTestForMJPEG";
 
     // Where to find the input
     // And Where to store the output
@@ -152,7 +152,7 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
     }
 
     /**
-     * Does the actual work for encoding frames from buffers of byte[].
+     * Do the actual work for encoding frames from buffers of byte[].
      * @param encoder
      * @param encoderColorFormat
      */
@@ -261,7 +261,11 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
                         Log.i(LOG_TAG, "outputStream writing data!");
                         outputStream.write(data);
+                    }
 
+                    //FIXME: Check info.flags is not working ???
+                    if (generateIndex >= NUM_FRAMES) {
+                        outputDone = true;
                     }
 
                     encoder.releaseOutputBuffer(encoderStatus, false);
