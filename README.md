@@ -31,7 +31,7 @@ make cts -j4
 Just like any other `cts` test cases, follow command:
 
 ```
-run cts -c EncoderDecoderTestForMJPEG -m <your-testing-method>
+run cts -c android.media.cts.EncoderDecoderTestForMJPEG -m <your-testing-method>
 ```
 
 * **Current Status**
@@ -40,9 +40,11 @@ The JPEG encoder can encoder one frame successfully.
 
 * **Working in progress**
 
-1 . Fix infinite looping issue of JPEG encoder.
+~~1 . Fix infinite looping issue of JPEG encoder.~~
 
 2 . Add decoder test
+
+3 . Fix the `info.flags` that can't got EOS flags from output `BufferInfo`.
 
 
 
