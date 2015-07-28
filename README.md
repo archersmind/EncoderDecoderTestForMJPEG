@@ -42,9 +42,11 @@ The JPEG encoder can encoder one frame successfully.
 
 ~~1 . Fix infinite looping issue of JPEG encoder.~~
 
-2 . Add decoder test
+~~2 . Add decoder test.~~
 
 3 . Fix the `info.flags` that can't got EOS flags from output `BufferInfo`.
+
+4 . Fix run-time warnings.
 
 
 
