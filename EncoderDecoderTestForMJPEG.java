@@ -147,14 +147,6 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
             MediaFormat format = MediaFormat.createVideoFormat(MIME_TYPE, mWidth, mHeight);
 
-            // Set some properties.  Failing to specify some of these can cause the MediaCodec
-            // configure() call to throw an unhelpful exception.
-            //format.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
-            //format.setInteger(MediaFormat.KEY_BIT_RATE, mBitRate);
-            //format.setInteger(MediaFormat.KEY_FRAME_RATE, FRAME_RATE);
-            //format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, IFRAME_INTERVAL);
-            Log.i(LOG_TAG, "format: " + format);
-
             // Create a MediaCodec for the desired codec, then configure it as an encoder with
             // our desired properties.
             decoder = MediaCodec.createByCodecName(codecInfo.getName());
@@ -246,32 +238,29 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
                 if (inputBufIndex >= 0) {
                     long ptsUsec = computePTS(generateIndex);
+                    // Store input data into frameData
+                    generateFrame(generateIndex, encoderColorFormat, frameData, true, true);
 
-                    if (generateIndex == NUM_FRAMES) {
-                        // We have enough frames, so send an empty one with EOS flag
-                        Log.d(LOG_TAG, "Queuing EOS in InputBuffer");
-                        encoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
-                                                 MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                        inputDone = true;
-                    } else {
-                        // Store input data into frameData
-                        generateFrame(generateIndex, encoderColorFormat, frameData, true, true);
+                    ByteBuffer inputBuf = encoderInputBuffers[inputBufIndex];
+                    // Buf capacity check
+                    Log.i(LOG_TAG, "inputBuf.capacity() = " + inputBuf.capacity()
+                            + "frameData.length = " + frameData.length);
+                    assertTrue(inputBuf.capacity() >= frameData.length);
+                    inputBuf.clear();
+                    inputBuf.put(frameData);
 
-                        ByteBuffer inputBuf = encoderInputBuffers[inputBufIndex];
-                        // Buf capacity check
-                        Log.i(LOG_TAG, "inputBuf.capacity() = " + inputBuf.capacity()
-                                + "frameData.length = " + frameData.length);
-                        assertTrue(inputBuf.capacity() >= frameData.length);
-                        inputBuf.clear();
-                        inputBuf.put(frameData);
-
-                        encoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
-                        Log.i(LOG_TAG, "Buffer " + inputBufIndex + " submitted to encode");
-                    }
-
-                    generateIndex++;
+                    encoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
+                    Log.i(LOG_TAG, "Buffer " + inputBufIndex + " submitted to encode");
                 } else {
                     Log.w(LOG_TAG, "Input buffer not available");
+                }
+
+                generateIndex++;
+                if (generateIndex >= NUM_FRAMES) {
+                    Log.d(LOG_TAG, "generateIndex = " + generateIndex + " Queuing EOS in InputBuffer");
+                    encoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
+                                             MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                    inputDone = true;
                 }
             }
 
@@ -311,6 +300,7 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                         encodedData.position(info.offset);
 
                         Log.i(LOG_TAG, "outputStream writing data!");
+                        outputDone = true;
                         outputStream.write(data);
                     }
 
@@ -377,31 +367,31 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                 if (inputBufIndex >= 0) {
                     long ptsUsec = computePTS(generateIndex);
 
-                    if (generateIndex == NUM_FRAMES) {
-                        // We have enough frames, so send an empty one with EOS flag
-                        Log.d(LOG_TAG, "Queuing EOS in InputBuffer");
-                        decoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
-                                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                        inputDone = true;
-                    } else {
-                        // Store input data into frameData
-                        generateFrame(generateIndex, decoderColorFormat, frameData, true, false);
+                    // Store input data into frameData
+                    generateFrame(generateIndex, decoderColorFormat, frameData, true, false);
 
-                        ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
-                        // Buf capacity check
-                        Log.i(LOG_TAG, "inputBuf.capacity() = " + inputBuf.capacity()
-                                + "frameData.length = " + frameData.length);
-                        assertTrue(inputBuf.capacity() >= frameData.length);
-                        inputBuf.clear();
-                        inputBuf.put(frameData);
+                    ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
+                    // Buf capacity check
+                    Log.i(LOG_TAG, "inputBuf.capacity() = " + inputBuf.capacity()
+                            + "frameData.length = " + frameData.length);
+                    assertTrue(inputBuf.capacity() >= frameData.length);
+                    inputBuf.clear();
+                    inputBuf.put(frameData);
 
-                        decoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
-                        Log.i(LOG_TAG, "Buffer " + inputBufIndex + " of len = " + frameData.length + " submitted to decode");
-                    }
-
+                    decoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
+                    Log.i(LOG_TAG, "Buffer " + inputBufIndex + " of len = " + frameData.length + " submitted to decode");
                     generateIndex++;
+
                 } else {
                     Log.w(LOG_TAG, "Input buffer not available");
+                }
+
+                if(generateIndex >= NUM_FRAMES) {
+                     // We have enough frames, so send an empty one with EOS flag
+                    //Log.d(LOG_TAG, "generateIndex = " + generateIndex + "Queuing EOS in InputBuffer");
+                    //decoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
+                    //        MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                    inputDone = true;
                 }
             }
 
@@ -449,11 +439,6 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                             outputStream.write(data);
                         }
                     }
-
-                    //FIXME: Check info.flags is not working ???
-                    //if (generateIndex >= NUM_FRAMES) {
-                    //    outputDone = true;
-                    //}
 
                     decoder.releaseOutputBuffer(decoderStatus, false);
                     decodeDone = true;
