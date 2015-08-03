@@ -33,17 +33,19 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
     // Where to find the input
     // And Where to store the output
-    private static final String INPUT_FILE = Environment.getExternalStorageDirectory() + "/video.YUY2";
-    private static final String OUTPUT_FILE = Environment.getExternalStorageDirectory() + "/video.jpeg";
+    private static final String INPUT_FILE_NAME_BASE =
+        Environment.getExternalStorageDirectory() + "/video.YUY2";
+    private static final String OUTPUT_FILE_NAME_BASE =
+        Environment.getExternalStorageDirectory() + "/video.jpeg";
 
     // Parameters for encoder
     private static final String MIME_TYPE = "video/mjpeg";
 
     private static final int TIME_OUT = 10000; //usec
 
-    private static final int FRAME_RATE = 15;               // 15fps
-    private static final int NUM_FRAMES = 10;                // Only one frame
-    private static final int IFRAME_INTERVAL = 10;          // 10 secs between I-frames
+    private static final int FRAME_RATE = 15;               // 15fps, not really needed
+    private static final int NUM_FRAMES = 10;               // Num of frame to input for decode/encode
+    private static final int IFRAME_INTERVAL = 10;          // 10 secs between I-frames, not really needed
 
 
     private int mWidth = -1;
@@ -204,6 +206,7 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
         Log.i(LOG_TAG, "In doEncodeVideoFromBuffer...");
 
         int generateIndex = 0;
+        int outPutIndex = 0;
 
         ByteBuffer[] encoderInputBuffers = encoder.getInputBuffers();
         ByteBuffer[] encoderOutputBuffers = encoder.getOutputBuffers();
@@ -215,16 +218,15 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
         long encodedSize = 0;
 
-        // Encoded File
-        FileOutputStream outputStream = new FileOutputStream(OUTPUT_FILE);
-
+        // Encoded outputStream
+        FileOutputStream outputStream = null;
 
         boolean inputDone = false;
         boolean encodeDone = false;
         boolean outputDone = false;
 
         while (!outputDone) {
-            Log.i(LOG_TAG, "Looping...");
+            Log.i(LOG_TAG, "Looping... ");
 
             // If we're not done submitting frames, generate a new one and submit it.  By
             // doing this on every loop we're working to ensure that the encoder always has
@@ -251,15 +253,15 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
                     encoder.queueInputBuffer(inputBufIndex, 0, frameData.length, ptsUsec, 0);
                     Log.i(LOG_TAG, "Buffer " + inputBufIndex + " submitted to encode");
+                    generateIndex++;
                 } else {
                     Log.w(LOG_TAG, "Input buffer not available");
                 }
 
-                generateIndex++;
                 if (generateIndex >= NUM_FRAMES) {
                     Log.d(LOG_TAG, "generateIndex = " + generateIndex + " Queuing EOS in InputBuffer");
-                    encoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
-                                             MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                    //encoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
+                    //                         MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                     inputDone = true;
                 }
             }
@@ -283,7 +285,9 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                     Log.e(LOG_TAG, "Unexpected result!!!");
                     fail("encoder in wrong Status");
                 } else { // it's the index of an output buffer that has been successfully decoded
+
                     Log.i(LOG_TAG, "Encode success, encoderStatus = " + encoderStatus);
+                    outputStream = new FileOutputStream(OUTPUT_FILE_NAME_BASE + "_" + outPutIndex);
                     ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
                     if (encodedData == null) {
                         fail("encoderOuputBuffer " + encoderStatus + " was null");
@@ -300,17 +304,17 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                         encodedData.position(info.offset);
 
                         Log.i(LOG_TAG, "outputStream writing data!");
-                        outputDone = true;
                         outputStream.write(data);
-                    }
-
-                    //FIXME: Check info.flags is not working ???
-                    if (generateIndex >= NUM_FRAMES) {
-                        outputDone = true;
+                        outPutIndex++;
                     }
 
                     encoder.releaseOutputBuffer(encoderStatus, false);
-                    encodeDone = true;
+
+                    //FIXME: Check info.flags is not working ???
+                    if (outPutIndex >= NUM_FRAMES) {
+                        outputDone = true;
+                        encodeDone = true;
+                    }
 
                 }
             }
@@ -329,12 +333,13 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
         // As for decoder, the input file is video.jpeg the output file is video.YUY2
         // which is oppsite with encoder
-        String INPUT = OUTPUT_FILE;
-        String OUTPUT = INPUT_FILE;
-
-        File input = new File(INPUT);
+        String INPUT = OUTPUT_FILE_NAME_BASE;
+        String OUTPUT = INPUT_FILE_NAME_BASE;
 
         int generateIndex = 0;
+        int outPutIndex = 0;
+
+        File input = new File(INPUT + "_" + generateIndex);
 
         ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
 
@@ -343,8 +348,8 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
         // The size of input picture
         byte[] frameData = new byte[(int)input.length()];
 
-        // decoded File
-        FileOutputStream outputStream = new FileOutputStream(OUTPUT);
+        // Decoded outputStream
+        FileOutputStream outputStream;
 
 
         boolean inputDone = false;
@@ -388,7 +393,7 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
                 if(generateIndex >= NUM_FRAMES) {
                      // We have enough frames, so send an empty one with EOS flag
-                    //Log.d(LOG_TAG, "generateIndex = " + generateIndex + "Queuing EOS in InputBuffer");
+                    Log.d(LOG_TAG, "generateIndex = " + generateIndex + "Queuing EOS in InputBuffer");
                     //decoder.queueInputBuffer(inputBufIndex, 0, 0, 0,
                     //        MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                     inputDone = true;
@@ -417,13 +422,13 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                     Log.i(LOG_TAG, "Decode success, decoderStatus =  " + decoderStatus + " info.size = " + info.size);
 
                     ByteBuffer[] decoderOutputBuffers = decoder.getOutputBuffers();
-
                     ByteBuffer decodedData = decoderOutputBuffers[decoderStatus];
+
                     if (decodedData == null) {
                         fail("decoderOuputBuffer " + decoderStatus + " was null");
                     }
 
-                    Log.i(LOG_TAG, "outputStream = " + outputStream);
+                    outputStream = new FileOutputStream(OUTPUT + "_" + outPutIndex);
 
                     decodedData.position(info.offset);
                     decodedData.limit(info.offset + info.size);
@@ -435,13 +440,17 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
 
                         if (info.size > 0) {
                             Log.i(LOG_TAG, "outputStream writing data! size = " + info.size);
-                            outputDone = true;
                             outputStream.write(data);
                         }
+                        outPutIndex++;
+                    }
+
+                    if (outPutIndex >= NUM_FRAMES) {
+                        outputDone = true;
+                        decodeDone = true;
                     }
 
                     decoder.releaseOutputBuffer(decoderStatus, false);
-                    decodeDone = true;
 
                 }
             }
@@ -472,16 +481,19 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
     private void generateFrame(int frameIndex, int colorFormat,
                                byte[] frameData, boolean readFromDisk,
                                boolean encoder) {
-        Log.i(LOG_TAG, "Generating frame " + frameIndex + "for " + (encoder ? "encoder" : "decoder"));
+
+        if (frameIndex >= NUM_FRAMES) {
+            fail("frameIndex is overflow...");
+        }
 
         FileInputStream fileInputStream = null;
         File file = null;
 
         // If it's decoder the OUTPUT_FILE name is as INPUT
         if (encoder) {
-            file = new File(INPUT_FILE);
+            file = new File(INPUT_FILE_NAME_BASE + "_" + frameIndex);
         } else {
-            file = new File(OUTPUT_FILE);
+            file = new File(OUTPUT_FILE_NAME_BASE + "_" + frameIndex);
         }
 
         Log.i(LOG_TAG, "file.length = " + file.length());
