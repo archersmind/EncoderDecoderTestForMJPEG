@@ -56,14 +56,47 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
     private MediaCodec.BufferInfo mBufferInfo;
 
     /**
-     * Test Encoding of MJPEG  from Buffer
+     * Test Encoding of MJPEG from Buffer
      *
      */
+    public void testEncodeVideoFromBufToBuf1080p() throws Exception {
+        Log.i(LOG_TAG, "Encode Video from Buffer To Buffer 1080p");
+        setParameters(1920, 1080, 6000000);
+        encodeVideoFromBuffer();
+    }
+
+    public void testEncodeVideoFromBufToBuf768p() throws Exception {
+        Log.i(LOG_TAG, "Encode Video from Buffer To Buffer 768p");
+        setParameters(1024, 768, 6000000);
+        encodeVideoFromBuffer();
+    }
 
     public void testEncodeVideoFromBufToBuf720p() throws Exception {
         Log.i(LOG_TAG, "Encode Video from Buffer To Buffer 720p");
         setParameters(1280, 720, 6000000);
         encodeVideoFromBuffer();
+    }
+
+    public void testEncodeVideoFromBufToBufD1() throws Exception {
+        Log.i(LOG_TAG, "Encode Video from Buffer To Buffer D1");
+        setParameters(720, 480, 6000000);
+        encodeVideoFromBuffer();
+    }
+
+    public void testEncodeVideoFromBufToBuf384p() throws Exception {
+        Log.i(LOG_TAG, "Encode Video from Buffer To Buffer Cross");
+        setParameters(512, 384, 6000000);
+        encodeVideoFromBuffer();
+    }
+
+    /**
+     * Test Decoding of MJPEG from Buffer
+     *
+     */
+    public void testDecodeVideoFromBufToBuf1080p() throws Exception {
+        Log.i(LOG_TAG, "Decode Video from Buffer to Buffer 1080p");
+        setParameters(1920, 1080, 6000000);
+        decodeVideoFromBuffer();
     }
 
     public void testDecodeVideoFromBufToBuf720p() throws Exception {
@@ -72,6 +105,23 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
         decodeVideoFromBuffer();
     }
 
+    public void testDecodeVideoFromBufToBuf768p() throws Exception {
+        Log.i(LOG_TAG, "Decode Video from Buffer to Buffer 768p");
+        setParameters(1024, 768, 6000000);
+        decodeVideoFromBuffer();
+    }
+
+    public void testDecodeVideoFromBufToBufD1() throws Exception {
+        Log.i(LOG_TAG, "Decode Video from Buffer to Buffer D1");
+        setParameters(720, 480, 6000000);
+        decodeVideoFromBuffer();
+    }
+
+    public void testDecodeVideoFromBufToBuf384p() throws Exception {
+        Log.i(LOG_TAG, "Decode Video from Buffer to Buffer 768p");
+        setParameters(512, 384, 6000000);
+        decodeVideoFromBuffer();
+    }
     /**
      * Sets the desired frame size and bit rate.
      */
@@ -216,8 +266,6 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
         // The size of a frame of video data, in the format we handle, is  mWidth*mHeight*2
         byte[] frameData = new byte[mWidth * mHeight * 2];
 
-        long encodedSize = 0;
-
         // Encoded outputStream
         FileOutputStream outputStream = null;
 
@@ -296,8 +344,6 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                     encodedData.position(info.offset);
                     encodedData.limit(info.offset + info.size);
 
-                    encodedSize += info.size;
-
                     if (outputStream != null) {
                         byte[] data = new byte[info.size];
                         encodedData.get(data); //Store input buffer into data
@@ -339,18 +385,16 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
         int generateIndex = 0;
         int outPutIndex = 0;
 
-        File input = new File(INPUT + "_" + generateIndex);
+        //File input = new File(INPUT + "_" + generateIndex);
+        File input = null;
+        byte[] frameData = null;
 
         ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
 
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
 
-        // The size of input picture
-        byte[] frameData = new byte[(int)input.length()];
-
         // Decoded outputStream
-        FileOutputStream outputStream;
-
+        FileOutputStream outputStream = null;
 
         boolean inputDone = false;
         boolean decodeDone = false;
@@ -372,6 +416,8 @@ public class EncoderDecoderTestForMJPEG extends AndroidTestCase {
                 if (inputBufIndex >= 0) {
                     long ptsUsec = computePTS(generateIndex);
 
+                    input = new File(INPUT + "_" + generateIndex);
+                    frameData = new byte[(int)input.length()];
                     // Store input data into frameData
                     generateFrame(generateIndex, decoderColorFormat, frameData, true, false);
 
