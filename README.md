@@ -1,11 +1,18 @@
 # EncoderDecoderTestForMJPEG
 
-* **Purpose**
+## Purpose
 
 This is a test application for JPEG/M-JPEG throug `MediaCodec`. This could also be a good tutorial of how to using
 `MediaCodec` `API` on Android.
 
-* **How to build, how to use**
+## Requisites
+
+Before testing, you should put input frames in the external storage of your target.
+
+- For Encoder Test, put 10 YUV frames at `/storage/sdcard0/video.YUY2_<frame_index>`.
+- For Decoder Test, put 10 JPEG pictures at `/storage/sdcard0/video.jpeg_<jpeg_index>`.
+
+## How to build, how to use
 
 This was written as if it were a CTS test, but is not part of CTS.It should be straightforward to adapt the code to
 other environments. 
@@ -34,11 +41,21 @@ Just like any other `cts` test cases, follow command:
 run cts -c android.media.cts.EncoderDecoderTestForMJPEG -m <your-testing-method>
 ```
 
-* **Current Status**
+4. Test result
 
-The JPEG encoder can encoder one frame successfully.
+You will see a *PASS* if the test complete successfully. And 10 output frames in the same directory where you keep testing input.
 
-* **Working in progress**
+- For Encoder Test, since your input is like `video.YUY2_<frame_index>` so you will get `video.jpeg_<jpeg_index>`.
+- For Decoder Test, since your input is like `video.jpeg_<jpeg_index>` so you will get `video.YUY2_<frame_index>`.
+
+## Current Status
+
+* The JPEG encoder can encoder one frame successfully.
+* Add test plans for different resolutions.    @20150804
+* Change to feed 10 input buffers continuously, in this way, we can get multiple output buffers. @20150804
+
+
+## Working in progress
 
 ~~1 . Fix infinite looping issue of JPEG encoder.~~
 
@@ -49,6 +66,8 @@ The JPEG encoder can encoder one frame successfully.
 ~~4 . Fix run-time warnings.~~
 
 5 . Code revise needed.
+
+6 . Should handle Java `FileOutputStream`/`FileInputStream` nicely.
 
 
 
