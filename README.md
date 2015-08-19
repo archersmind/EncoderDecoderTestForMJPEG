@@ -65,7 +65,7 @@ You will see a *PASS* if the test complete successfully. And 10 output frames in
 
 ~~4 . Fix run-time warnings.~~
 
-5 . Code revise needed.
+~~5 . Code revise needed.~~
 
 6 . Should handle Java `FileOutputStream`/`FileInputStream` nicely.
 
